@@ -354,7 +354,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported token info class: %X (%s)\n", token_information_class,
+        c.win_emu.log.error("Unsupported token info class: %X (%s)\n",
+                            token_information_class,
                             magic_enum::enum_name(token_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;

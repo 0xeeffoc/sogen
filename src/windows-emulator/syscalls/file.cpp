@@ -208,7 +208,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported set file info class: 0x%X (%s)\n", info_class,
+        c.win_emu.log.error("Unsupported set file info class: 0x%X (%s)\n",
+                            info_class,
                             magic_enum::enum_name(info_class).data());
         c.emu.stop();
 
@@ -261,7 +262,8 @@ namespace syscalls
                 });
 
         default:
-            c.win_emu.log.error("Unsupported fs info class: 0x%X (%s)\n", fs_information_class,
+            c.win_emu.log.error("Unsupported fs info class: 0x%X (%s)\n",
+                                fs_information_class,
                                 magic_enum::enum_name(fs_information_class).data());
             c.emu.stop();
             return write_io_status(io_status_block, STATUS_NOT_SUPPORTED, true);
@@ -440,7 +442,8 @@ namespace syscalls
                                                                       f);
         }
 
-        c.win_emu.log.error("Unsupported query directory file info class: %X (%s)\n", info_class,
+        c.win_emu.log.error("Unsupported query directory file info class: %X (%s)\n",
+                            info_class,
                             magic_enum::enum_name(static_cast<FILE_INFORMATION_CLASS>(info_class)).data());
         c.emu.stop();
 
@@ -962,7 +965,8 @@ namespace syscalls
             return ret(STATUS_SUCCESS, all_length);
         }
 
-        c.win_emu.log.error("Unsupported query file info class: 0x%X (%s)\n", info_class,
+        c.win_emu.log.error("Unsupported query file info class: 0x%X (%s)\n",
+                            info_class,
                             magic_enum::enum_name(static_cast<FILE_INFORMATION_CLASS>(info_class)).data());
         c.emu.stop();
 
@@ -1029,7 +1033,8 @@ namespace syscalls
             return ret(STATUS_SUCCESS);
         }
 
-        c.win_emu.log.error("Unsupported query name info class: %X (%s)\n", info_class,
+        c.win_emu.log.error("Unsupported query name info class: %X (%s)\n",
+                            info_class,
                             magic_enum::enum_name(static_cast<FILE_INFORMATION_CLASS>(info_class)).data());
         c.emu.stop();
 

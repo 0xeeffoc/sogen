@@ -364,7 +364,8 @@ namespace syscalls
                                                                 });
         }
 
-        c.win_emu.log.error("Unsupported object info class: %X (%s)\n", object_information_class,
+        c.win_emu.log.error("Unsupported object info class: %X (%s)\n",
+                            object_information_class,
                             magic_enum::enum_name(object_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;

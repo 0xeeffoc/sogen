@@ -302,7 +302,9 @@ namespace syscalls
         }
 
         default:
-            c.win_emu.log.error("Unsupported system info class: %X (%s)\n", info_class, magic_enum::enum_name(info_class).data());
+            c.win_emu.log.error("Unsupported system info class: %X (%s)\n",
+                                info_class,
+                                magic_enum::enum_name(info_class).data());
             c.emu.stop();
             return STATUS_NOT_SUPPORTED;
         }

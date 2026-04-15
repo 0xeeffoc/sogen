@@ -88,7 +88,8 @@ namespace syscalls
 
         if (key_information_class == KeyFullInformation)
         {
-            c.win_emu.log.warn("Unsupported registry class: %X (%s)\n", key_information_class,
+            c.win_emu.log.warn("Unsupported registry class: %X (%s)\n",
+                               key_information_class,
                                magic_enum::enum_name(key_information_class).data());
             return STATUS_NOT_SUPPORTED;
         }
@@ -148,7 +149,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.warn("Unsupported registry class: %X (%s)\n", key_information_class,
+        c.win_emu.log.warn("Unsupported registry class: %X (%s)\n",
+                           key_information_class,
                            magic_enum::enum_name(key_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
@@ -264,7 +266,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.warn("Unsupported registry value class: %X (%s)\n", key_value_information_class,
+        c.win_emu.log.warn("Unsupported registry value class: %X (%s)\n",
+                           key_value_information_class,
                            magic_enum::enum_name(key_value_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
@@ -427,7 +430,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.warn("Unsupported registry information class: %X (%s)\n", key_information_class,
+        c.win_emu.log.warn("Unsupported registry information class: %X (%s)\n",
+                           key_information_class,
                            magic_enum::enum_name(key_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
@@ -509,7 +513,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.warn("Unsupported registry enumeration class: %X (%s)\n", key_information_class,
+        c.win_emu.log.warn("Unsupported registry enumeration class: %X (%s)\n",
+                           key_information_class,
                            magic_enum::enum_name(key_information_class).data());
         return STATUS_NOT_SUPPORTED;
     }
@@ -620,7 +625,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.warn("Unsupported registry value enumeration class: %X (%s)\n", key_value_information_class,
+        c.win_emu.log.warn("Unsupported registry value enumeration class: %X (%s)\n",
+                           key_value_information_class,
                            magic_enum::enum_name(key_value_information_class).data());
         return STATUS_NOT_SUPPORTED;
     }

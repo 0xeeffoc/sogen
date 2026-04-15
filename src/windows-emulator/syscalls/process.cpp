@@ -207,7 +207,8 @@ namespace syscalls
         }
 
         default:
-            c.win_emu.log.error("Unsupported process info class: %X (%s)\n", info_class,
+            c.win_emu.log.error("Unsupported process info class: %X (%s)\n",
+                                info_class,
                                 magic_enum::enum_name(static_cast<PROCESSINFOCLASS>(info_class)).data());
             c.emu.stop();
 
@@ -394,7 +395,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported info process class: %X (%s)\n", info_class,
+        c.win_emu.log.error("Unsupported info process class: %X (%s)\n",
+                            info_class,
                             magic_enum::enum_name(static_cast<PROCESSINFOCLASS>(info_class)).data());
         c.emu.stop();
 
