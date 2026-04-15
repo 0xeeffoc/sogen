@@ -146,7 +146,7 @@ namespace syscalls
         case SystemWow64SharedInformationObsolete:
         case SystemVerifierTriageInformation:
         case SystemProcessorPowerInformationEx:
-            return STATUS_NOT_IMPLEMENTED;
+            return STATUS_NOT_SUPPORTED;
 
         // Simple ULONG-valued queries.
         case SystemRecommendedSharedDataAlignment:
