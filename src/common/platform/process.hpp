@@ -1160,4 +1160,27 @@ struct PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION
     ULONG Reserved;
     uint64_t Callback;
 };
+
+struct EMU_RTL_PROCESS_MODULE_INFORMATION64
+{
+    uint64_t Section;
+    uint64_t MappedBase;
+    uint64_t ImageBase;
+    ULONG ImageSize;
+    ULONG Flags;
+    USHORT LoadOrderIndex;
+    USHORT InitOrderIndex;
+    USHORT LoadCount;
+    USHORT OffsetToFileName;
+    UCHAR FullPathName[256];
+};
+
+struct EMU_RTL_PROCESS_MODULE_INFORMATION_EX64
+{
+    USHORT NextOffset;
+    EMU_RTL_PROCESS_MODULE_INFORMATION64 BaseInfo;
+    ULONG ImageChecksum;
+    ULONG TimeDateStamp;
+    uint64_t DefaultBase;
+};
 // NOLINTEND(modernize-use-using,cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays,cppcoreguidelines-use-enum-class)

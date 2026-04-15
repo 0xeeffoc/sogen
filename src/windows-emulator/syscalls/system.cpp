@@ -275,6 +275,67 @@ namespace syscalls
                                                                 basic_info.NumberOfProcessors = 4;
                                                             });
 
+        case SystemModuleInformationEx: {
+            constexpr auto entry_size = sizeof(EMU_RTL_PROCESS_MODULE_INFORMATION_EX64);
+            constexpr auto required_size = entry_size * 2;
+
+            if (return_length)
+            {
+                return_length.write(static_cast<uint32_t>(required_size));
+            }
+
+            if (system_information_length < required_size)
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+
+            const auto make_entry = [](const USHORT next_offset,
+                                       const uint64_t image_base,
+                                       const uint32_t image_size,
+                                       const USHORT load_order,
+                                       const char* full_path) {
+                EMU_RTL_PROCESS_MODULE_INFORMATION_EX64 entry{};
+                entry.NextOffset = next_offset;
+                entry.BaseInfo.Section = 0;
+                entry.BaseInfo.MappedBase = image_base;
+                entry.BaseInfo.ImageBase = image_base;
+                entry.BaseInfo.ImageSize = image_size;
+                entry.BaseInfo.Flags = 0x08804000;
+                entry.BaseInfo.LoadOrderIndex = load_order;
+                entry.BaseInfo.InitOrderIndex = load_order;
+                entry.BaseInfo.LoadCount = 0xFFFF;
+
+                const auto path_len = strlen(full_path);
+                const auto copy_len = std::min<size_t>(path_len, sizeof(entry.BaseInfo.FullPathName) - 1);
+                memcpy(entry.BaseInfo.FullPathName, full_path, copy_len);
+
+                const auto* last_slash = strrchr(full_path, '\\');
+                entry.BaseInfo.OffsetToFileName =
+                    last_slash ? static_cast<USHORT>((last_slash - full_path) + 1) : static_cast<USHORT>(0);
+
+                entry.ImageChecksum = 0;
+                entry.TimeDateStamp = 0;
+                entry.DefaultBase = image_base;
+                return entry;
+            };
+
+            const auto ntoskrnl = make_entry(static_cast<USHORT>(entry_size),
+                                             0xfffff80000000000ull,
+                                             0x00800000,
+                                             0,
+                                             "\\SystemRoot\\system32\\ntoskrnl.exe");
+            const auto hal = make_entry(static_cast<USHORT>(0),
+                                        0xfffff80000800000ull,
+                                        0x00080000,
+                                        1,
+                                        "\\SystemRoot\\system32\\hal.dll");
+
+            c.emu.write_memory(system_information, ntoskrnl);
+            c.emu.write_memory(system_information + entry_size, hal);
+
+            return STATUS_SUCCESS;
+        }
+
         case SystemSupportedProcessorArchitectures: {
             constexpr auto num_arch = 2;
 
