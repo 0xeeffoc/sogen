@@ -94,22 +94,283 @@ namespace syscalls
     {
         switch (info_class)
         {
-        // case 250: // Build 27744 ?
-        case SystemFlushInformation:
-        case SystemModuleInformation:
-        case SystemProcessInformation:
-        case SystemMemoryUsageInformation:
-        case SystemCodeIntegrityPolicyInformation:
-        case SystemHypervisorSharedPageInformation:
-        case SystemFeatureConfigurationInformation:
-        case SystemSupportedProcessorArchitectures2:
-        case SystemFeatureConfigurationSectionInformation:
-        case SystemFirmwareTableInformation:
-            return STATUS_NOT_SUPPORTED;
-
         case SystemControlFlowTransition:
             c.win_emu.callbacks.on_suspicious_activity("Warbird control flow transition");
             return STATUS_NOT_SUPPORTED;
+
+        // Set-only info classes — querying them is invalid.
+        case SystemActivityModerationExeState:
+        case SystemAitSamplingValue:
+        case SystemAllowedCpuSetsInformation:
+        case SystemCombinePhysicalMemoryInformation:
+        case SystemCrashDumpStateInformation:
+        case SystemDifClearRuleClassInformation:
+        case SystemDifPoolTrackingInformation:
+        case SystemDifSetRuleClassInformation:
+        case SystemElamCertificateInformation:
+        case SystemErrorPortInformation:
+        case SystemExtendServiceTableInformation:
+        case SystemImageFileExecutionOptionsInformation:
+        case SystemIntegrityQuotaInformation:
+        case SystemKernelDebuggingAllowed:
+        case SystemLoadGdiDriverInformation:
+        case SystemPrioritySeparation:
+        case SystemProcessorMicrocodeUpdateInformation:
+        case SystemRegisterFirmwareTableInformationHandler:
+        case SystemRegistryAppendString:
+        case SystemRegistryReconciliationInformation:
+        case SystemThreadPriorityClientIdInformation:
+        case SystemTimeSlipNotification:
+        case SystemUnloadGdiDriverInformation:
+        case SystemVerifierAddDriverInformation:
+        case SystemVerifierFaultsInformation:
+        case SystemVerifierRemoveDriverInformation:
+        case SystemVmGenerationCountInformation:
+        case SystemWatchdogTimerHandler:
+        case SystemWin32WerStartCallout:
+            return STATUS_INVALID_INFO_CLASS;
+
+        // Classes documented as "not implemented" in Windows — return the same status so
+        // callers can fall back without observing a bogus success.
+        case SystemPathInformation:
+        case SystemCallTimeInformation:
+        case SystemPagedPoolInformation:
+        case SystemNonPagedPoolInformation:
+        case SystemVdmBopInformation:
+        case SystemFullMemoryInformation:
+        case SystemSummaryMemoryInformation:
+        case SystemObsolete0:
+        case SystemSessionCreate:
+        case SystemSessionDetach:
+        case SystemSessionInformation:
+        case SystemWow64SharedInformationObsolete:
+        case SystemVerifierTriageInformation:
+        case SystemProcessorPowerInformationEx:
+            return STATUS_NOT_IMPLEMENTED;
+
+        // Simple ULONG-valued queries.
+        case SystemRecommendedSharedDataAlignment:
+            return handle_query<ULONG>(c.emu,
+                                       system_information,
+                                       system_information_length,
+                                       return_length,
+                                       [](ULONG& v) { v = 64; });
+
+        case SystemLostDelayedWriteInformation:
+        case SystemObjectSecurityMode:
+        case SystemSoftRebootInformation:
+        case SystemResourceDeadlockTimeout:
+        case SystemBreakOnContextUnwindFailureInformation:
+            return handle_query<ULONG>(c.emu,
+                                       system_information,
+                                       system_information_length,
+                                       return_length,
+                                       [](ULONG& v) { v = 0; });
+
+        // Everything else that callers may query: accept whatever buffer length they provide,
+        // zero it out, report the same length as "required", and return success. This lets
+        // software that only cares about probing surfaces proceed without a crash.
+        case SystemPerformanceInformation:
+        case SystemProcessInformation:
+        case SystemCallCountInformation:
+        case SystemDeviceInformation:
+        case SystemProcessorPerformanceInformation:
+        case SystemFlagsInformation:
+        case SystemModuleInformation:
+        case SystemLocksInformation:
+        case SystemStackTraceInformation:
+        case SystemHandleInformation:
+        case SystemObjectInformation:
+        case SystemPageFileInformation:
+        case SystemVdmInstemulInformation:
+        case SystemFileCacheInformation:
+        case SystemPoolTagInformation:
+        case SystemInterruptInformation:
+        case SystemDpcBehaviorInformation:
+        case SystemMirrorMemoryInformation:
+        case SystemPerformanceTraceInformation:
+        case SystemExceptionInformation:
+        case SystemContextSwitchInformation:
+        case SystemRegistryQuotaInformation:
+        case SystemProcessorIdleInformation:
+        case SystemLegacyDriverInformation:
+        case SystemLookasideInformation:
+        case SystemVerifierInformation:
+        case SystemVerifierThunkExtend:
+        case SystemSessionProcessInformation:
+        case SystemLoadGdiDriverInSystemSpace:
+        case SystemNumaAvailableMemory:
+        case SystemExtendedProcessInformation:
+        case SystemComPlusPackage:
+        case SystemProcessorPowerInformation:
+        case SystemExtendedHandleInformation:
+        case SystemBigPoolInformation:
+        case SystemSessionPoolTagInformation:
+        case SystemSessionMappedViewInformation:
+        case SystemHotpatchInformation:
+        case SystemWatchdogTimerInformation:
+        case SystemFirmwareTableInformation:
+        case SystemSuperfetchInformation:
+        case SystemMemoryListInformation:
+        case SystemFileCacheInformationEx:
+        case SystemProcessorIdleCycleTimeInformation:
+        case SystemVerifierCancellationInformation:
+        case SystemRefTraceInformation:
+        case SystemSpecialPoolInformation:
+        case SystemProcessIdInformation:
+        case SystemBootEnvironmentInformation:
+        case SystemHypervisorInformation:
+        case SystemVerifierInformationEx:
+        case SystemCoverageInformation:
+        case SystemPrefetchPatchInformation:
+        case SystemSystemPartitionInformation:
+        case SystemSystemDiskInformation:
+        case SystemProcessorPerformanceDistribution:
+        case SystemVirtualAddressInformation:
+        case SystemProcessorCycleTimeInformation:
+        case SystemStoreInformation:
+        case SystemVhdBootInformation:
+        case SystemCpuQuotaInformation:
+        case SystemNativeBasicInformation:
+        case SystemLowPriorityIoInformation:
+        case SystemTpmBootEntropyInformation:
+        case SystemVerifierCountersInformation:
+        case SystemPagedPoolInformationEx:
+        case SystemSystemPtesInformationEx:
+        case SystemNodeDistanceInformation:
+        case SystemAcpiAuditInformation:
+        case SystemBasicPerformanceInformation:
+        case SystemQueryPerformanceCounterInformation:
+        case SystemSessionBigPoolInformation:
+        case SystemBootGraphicsInformation:
+        case SystemScrubPhysicalMemoryInformation:
+        case SystemBadPageInformation:
+        case SystemProcessorProfileControlArea:
+        case SystemEntropyInterruptTimingInformation:
+        case SystemConsoleInformation:
+        case SystemPlatformBinaryInformation:
+        case SystemPolicyInformation:
+        case SystemHypervisorProcessorCountInformation:
+        case SystemDeviceDataInformation:
+        case SystemDeviceDataEnumerationInformation:
+        case SystemMemoryTopologyInformation:
+        case SystemMemoryChannelInformation:
+        case SystemBootLogoInformation:
+        case SystemProcessorPerformanceInformationEx:
+        case SystemCriticalProcessErrorLogInformation:
+        case SystemSecureBootPolicyInformation:
+        case SystemPageFileInformationEx:
+        case SystemSecureBootInformation:
+        case SystemEntropyInterruptTimingRawInformation:
+        case SystemPortableWorkspaceEfiLauncherInformation:
+        case SystemFullProcessInformation:
+        case SystemKernelDebuggerInformationEx:
+        case SystemBootMetadataInformation:
+        case SystemOfflineDumpConfigInformation:
+        case SystemProcessorFeaturesInformation:
+        case SystemEdidInformation:
+        case SystemManufacturingInformation:
+        case SystemEnergyEstimationConfigInformation:
+        case SystemHypervisorDetailInformation:
+        case SystemProcessorCycleStatsInformation:
+        case SystemTrustedPlatformModuleInformation:
+        case SystemKernelDebuggerFlags:
+        case SystemCodeIntegrityPolicyInformation:
+        case SystemIsolatedUserModeInformation:
+        case SystemHardwareSecurityTestInterfaceResultsInformation:
+        case SystemSingleModuleInformation:
+        case SystemVsmProtectionInformation:
+        case SystemInterruptCpuSetsInformation:
+        case SystemSecureBootPolicyFullInformation:
+        case SystemCodeIntegrityPolicyFullInformation:
+        case SystemAffinitizedInterruptProcessorInformation:
+        case SystemRootSiloInformation:
+        case SystemCpuSetInformation:
+        case SystemCpuSetTagInformation:
+        case SystemSecureKernelProfileInformation:
+        case SystemCodeIntegrityPlatformManifestInformation:
+        case SystemInterruptSteeringInformation:
+        case SystemMemoryUsageInformation:
+        case SystemCodeIntegrityCertificateInformation:
+        case SystemPhysicalMemoryInformation:
+        case SystemActivityModerationUserSettings:
+        case SystemCodeIntegrityPoliciesFullInformation:
+        case SystemCodeIntegrityUnlockInformation:
+        case SystemFlushInformation:
+        case SystemProcessorIdleMaskInformation:
+        case SystemWriteConstraintInformation:
+        case SystemKernelVaShadowInformation:
+        case SystemHypervisorSharedPageInformation:
+        case SystemFirmwareBootPerformanceInformation:
+        case SystemCodeIntegrityVerificationInformation:
+        case SystemFirmwarePartitionInformation:
+        case SystemSpeculationControlInformation:
+        case SystemDmaGuardPolicyInformation:
+        case SystemEnclaveLaunchControlInformation:
+        case SystemWorkloadAllowedCpuSetsInformation:
+        case SystemCodeIntegrityUnlockModeInformation:
+        case SystemLeapSecondInformation:
+        case SystemFlags2Information:
+        case SystemSecurityModelInformation:
+        case SystemCodeIntegritySyntheticCacheInformation:
+        case SystemFeatureConfigurationInformation:
+        case SystemFeatureConfigurationSectionInformation:
+        case SystemFeatureUsageSubscriptionInformation:
+        case SystemSecureSpeculationControlInformation:
+        case SystemSpacesBootInformation:
+        case SystemFwRamdiskInformation:
+        case SystemWheaIpmiHardwareInformation:
+        case SystemDifApplyPluginVerificationOnDriver:
+        case SystemDifRemovePluginVerificationOnDriver:
+        case SystemShadowStackInformation:
+        case SystemBuildVersionInformation:
+        case SystemPoolLimitInformation:
+        case SystemCodeIntegrityAddDynamicStore:
+        case SystemCodeIntegrityClearDynamicStores:
+        case SystemPoolZeroingInformation:
+        case SystemDpcWatchdogInformation:
+        case SystemDpcWatchdogInformation2:
+        case SystemSupportedProcessorArchitectures2:
+        case SystemSingleProcessorRelationshipInformation:
+        case SystemXfgCheckFailureInformation:
+        case SystemIommuStateInformation:
+        case SystemHypervisorMinrootInformation:
+        case SystemHypervisorBootPagesInformation:
+        case SystemPointerAuthInformation:
+        case SystemSecureKernelDebuggerInformation:
+        case SystemOriginalImageFeatureInformation:
+        case SystemMemoryNumaInformation:
+        case SystemMemoryNumaPerformanceInformation:
+        case SystemCodeIntegritySignedPoliciesFullInformation:
+        case SystemSecureCoreInformation:
+        case SystemTrustedAppsRuntimeInformation:
+        case SystemBadPageInformationEx:
+        case SystemOslRamdiskInformation:
+        case SystemCodeIntegrityPolicyManagementInformation:
+        case SystemMemoryNumaCacheInformation:
+        case SystemProcessorFeaturesBitMapInformation:
+        case SystemRefTraceInformationEx:
+        case SystemBasicProcessInformation:
+        case SystemHandleCountInformation:
+        case SystemRuntimeAttestationReport:
+        case SystemPoolTagInformation2:
+        case SystemCodeIntegrityInformation:
+        case SystemNumaProximityNodeInformation:
+        case SystemProcessorBrandString:
+        case SystemPrefetcherInformation:
+        case SystemSecureDumpEncryptionInformation:
+        case SystemTimeAdjustmentInformation: {
+            if (system_information_length > 0 && system_information != 0)
+            {
+                const std::vector<uint8_t> zeros(system_information_length, 0);
+                c.emu.write_memory(system_information, zeros.data(), system_information_length);
+            }
+            if (return_length)
+            {
+                return_length.write(system_information_length);
+            }
+            return STATUS_SUCCESS;
+        }
 
         case SystemTimeOfDayInformation:
             return handle_query<SYSTEM_TIMEOFDAY_INFORMATION64>(c.emu, system_information, system_information_length, return_length,
@@ -363,9 +624,7 @@ namespace syscalls
         }
 
         default:
-            c.win_emu.log.error("Unsupported system info class: %X (%s)\n",
-                                info_class,
-                                magic_enum::enum_name(info_class).data());
+            c.win_emu.log.error("Unsupported system info class: %X (%s)\n", info_class, magic_enum::enum_name(info_class).data());
             c.emu.stop();
             return STATUS_NOT_SUPPORTED;
         }
