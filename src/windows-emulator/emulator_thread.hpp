@@ -269,6 +269,14 @@ class emulator_thread : public ref_counted_object
 
     bool debugger_hide{false};
 
+    // Thread scheduling information (set via NtSetInformationThread, returned by NtQueryInformationThread).
+    // KPRIORITY is a signed LONG; 8 corresponds to THREAD_PRIORITY_NORMAL.
+    int32_t priority{8};
+    int32_t base_priority{8};
+    uint32_t priority_boost{0};
+    uint32_t ideal_processor{0};
+    uint64_t affinity_mask{0};
+
     std::vector<callback_frame> callback_stack;
     std::optional<uint64_t> callback_return_rax{};
 
@@ -371,6 +379,12 @@ class emulator_thread : public ref_counted_object
 
         buffer.write(this->debugger_hide);
 
+        buffer.write(this->priority);
+        buffer.write(this->base_priority);
+        buffer.write(this->priority_boost);
+        buffer.write(this->ideal_processor);
+        buffer.write(this->affinity_mask);
+
         buffer.write_vector(this->callback_stack);
         buffer.write_optional(this->callback_return_rax);
 
@@ -432,6 +446,12 @@ class emulator_thread : public ref_counted_object
         buffer.read_vector(this->last_registers);
 
         buffer.read(this->debugger_hide);
+
+        buffer.read(this->priority);
+        buffer.read(this->base_priority);
+        buffer.read(this->priority_boost);
+        buffer.read(this->ideal_processor);
+        buffer.read(this->affinity_mask);
 
         buffer.read_vector(this->callback_stack);
         buffer.read_optional(this->callback_return_rax);

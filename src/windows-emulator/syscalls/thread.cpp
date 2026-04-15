@@ -111,10 +111,61 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        if (info_class == ThreadSchedulerSharedDataSlot || info_class == ThreadBasePriority || info_class == ThreadAffinityMask ||
-            info_class == ThreadPriorityBoost || info_class == ThreadEnableAlignmentFaultFixup)
+        if (info_class == ThreadSchedulerSharedDataSlot || info_class == ThreadEnableAlignmentFaultFixup)
         {
             return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPriority)
+        {
+            if (thread_information_length != sizeof(int32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->priority = c.emu.read_memory<int32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadBasePriority)
+        {
+            if (thread_information_length != sizeof(int32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->base_priority = c.emu.read_memory<int32_t>(thread_information);
+            thread->priority = thread->base_priority;
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPriorityBoost)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->priority_boost = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadAffinityMask)
+        {
+            if (thread_information_length != sizeof(uint64_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->affinity_mask = c.emu.read_memory<uint64_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIdealProcessor)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            const auto previous = thread->ideal_processor;
+            thread->ideal_processor = c.emu.read_memory<uint32_t>(thread_information);
+            return static_cast<NTSTATUS>(previous);
         }
 
         if (info_class == ThreadHideFromDebugger)
@@ -417,6 +468,39 @@ namespace syscalls
             const emulator_object<KERNEL_USER_TIMES> info{c.emu, thread_information};
             info.write(KERNEL_USER_TIMES{});
 
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPriority || info_class == ThreadBasePriority)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(int32_t));
+            }
+
+            if (thread_information_length < sizeof(int32_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            const auto value = (info_class == ThreadPriority) ? thread->priority : thread->base_priority;
+            c.emu.write_memory<int32_t>(thread_information, value);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPriorityBoost)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(uint32_t));
+            }
+
+            if (thread_information_length < sizeof(uint32_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            c.emu.write_memory<uint32_t>(thread_information, thread->priority_boost);
             return STATUS_SUCCESS;
         }
 
