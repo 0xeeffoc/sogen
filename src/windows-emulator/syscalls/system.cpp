@@ -311,9 +311,14 @@ namespace syscalls
     NTSTATUS handle_NtQuerySystemInformation(const syscall_context& c, const uint32_t info_class, const uint64_t system_information,
                                              const uint32_t system_information_length, const emulator_object<uint32_t> return_length)
     {
-        return handle_NtQuerySystemInformationEx(c, 
+        return handle_NtQuerySystemInformationEx(
+            c,
             static_cast<SYSTEM_INFORMATION_CLASS>(info_class),
-            0, 0, system_information, system_information_length, return_length);
+            0,
+            0,
+            system_information,
+            system_information_length,
+            return_length);
     }
 
     NTSTATUS handle_NtSetSystemInformation()
