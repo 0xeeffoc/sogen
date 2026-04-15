@@ -312,7 +312,7 @@ namespace syscalls
     // syscalls/system.cpp:
     NTSTATUS handle_NtQuerySystemInformation(const syscall_context& c, uint32_t info_class, uint64_t system_information,
                                              uint32_t system_information_length, emulator_object<uint32_t> return_length);
-    NTSTATUS handle_NtQuerySystemInformationEx(const syscall_context& c, uint32_t info_class, uint64_t input_buffer,
+    NTSTATUS handle_NtQuerySystemInformationEx(const syscall_context& c, SYSTEM_INFORMATION_CLASS info_class, uint64_t input_buffer,
                                                uint32_t input_buffer_length, uint64_t system_information,
                                                uint32_t system_information_length, emulator_object<uint32_t> return_length);
     NTSTATUS handle_NtSetSystemInformation();
