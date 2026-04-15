@@ -206,6 +206,147 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
+        // Set-only info classes — querying them is invalid.
+        case ProcessBasePriority:
+        case ProcessRaisePriority:
+        case ProcessExceptionPort:
+        case ProcessAccessToken:
+        case ProcessLdtSize:
+        case ProcessIoPortHandlers:
+        case ProcessForegroundInformation:
+        case ProcessTlsInformation:
+        case ProcessInstrumentationCallback:
+        case ProcessThreadStackAllocation:
+        case ProcessTokenVirtualizationEnabled:
+        case ProcessDynamicFunctionTableInformation:
+        case ProcessRevokeFileHandles:
+        case ProcessWorkingSetControl:
+        case ProcessMemoryExhaustion:
+        case ProcessFaultInformation:
+        case ProcessDisableSystemAllowedCpuSets:
+        case ProcessManageWritesToExecutableMemory:
+        case ProcessSystemResourceManagement:
+        case ProcessCombineSecurityDomainsInformation:
+        case ProcessFiberShadowStackAllocation:
+        case ProcessFreeFiberShadowStackAllocation:
+        case ProcessAltSystemCallInformation:
+        case ProcessDynamicEHContinuationTargets:
+        case ProcessDynamicEnforcedCetCompatibleRanges:
+        case ProcessEnableOptionalXStateFeatures:
+        case ProcessPriorityClassEx:
+            return STATUS_INVALID_INFO_CLASS;
+
+        // Obsolete or undocumented classes — nothing sensible to return.
+        case ProcessSubsystemProcess:
+        case ProcessIumChallengeResponse:
+        case ProcessReserved3Information:
+        case ProcessCaptureTrustletLiveDump:
+        case ProcessDebugAuthInformation:
+        case ProcessLoaderDetour:
+        case ProcessCreateStateChange:
+        case ProcessApplyStateChange:
+        case ProcessAssignCpuPartitions:
+        case ProcessSchedulerSharedData:
+        case ProcessSlistRollbackInformation:
+        case ProcessFindFirstThreadByTebValue:
+            return STATUS_NOT_SUPPORTED;
+
+        // Simple ULONG queries.
+        case ProcessHandleCount:
+        case ProcessLUIDDeviceMapsEnabled:
+        case ProcessBreakOnTermination:
+        case ProcessUserModeIOPL:
+        case ProcessHandleCheckingMode:
+        case ProcessCheckStackExtentsMode:
+        case ProcessRaiseUMExceptionOnInvalidHandleClose:
+        case ProcessEffectivePagePriority:
+            return handle_query<ULONG>(c.emu,
+                                       process_information,
+                                       process_information_length,
+                                       return_length,
+                                       [](ULONG& v) { v = 0; });
+
+        // ULONGLONG query (ProcessSequenceNumber).
+        case ProcessSequenceNumber:
+            return handle_query<ULONGLONG>(c.emu,
+                                           process_information,
+                                           process_information_length,
+                                           return_length,
+                                           [](ULONGLONG& v) { v = 1; });
+
+        // BOOLEAN queries.
+        case ProcessInPrivate:
+        case ProcessHighGraphicsPriorityInformation:
+            return handle_query<BOOLEAN>(c.emu,
+                                         process_information,
+                                         process_information_length,
+                                         return_length,
+                                         [](BOOLEAN& b) { b = FALSE; });
+
+        // Everything else that callers may query: accept whatever buffer length they provide,
+        // zero it out, report the same length as "required", and return success. This lets
+        // software that only cares about probing surfaces proceed without a crash.
+        case ProcessQuotaLimits:
+        case ProcessIoCounters:
+        case ProcessVmCounters:
+        case ProcessLdtInformation:
+        case ProcessPooledUsageAndLimits:
+        case ProcessWorkingSetWatch:
+        case ProcessAffinityMask:
+        case ProcessPriorityBoost:
+        case ProcessSessionInformation:
+        case ProcessWow64Information:
+        case ProcessImageFileName:
+        case ProcessHandleTracing:
+        case ProcessIoPriority:
+        case ProcessCycleTime:
+        case ProcessPagePriority:
+        case ProcessWorkingSetWatchEx:
+        case ProcessImageFileMapping:
+        case ProcessAffinityUpdateMode:
+        case ProcessMemoryAllocationMode:
+        case ProcessConsoleHostProcess:
+        case ProcessWindowInformation:
+        case ProcessHandleInformation:
+        case ProcessKeepAliveCount:
+        case ProcessHandleTable:
+        case ProcessCommandLineInformation:
+        case ProcessProtectionInformation:
+        case ProcessTelemetryIdInformation:
+        case ProcessCommitReleaseInformation:
+        case ProcessDefaultCpuSetsInformation:
+        case ProcessAllowedCpuSetsInformation:
+        case ProcessJobMemoryInformation:
+        case ProcessChildProcessInformation:
+        case ProcessSubsystemInformation:
+        case ProcessEnergyValues:
+        case ProcessPowerThrottlingState:
+        case ProcessWin32kSyscallFilterInformation:
+        case ProcessWakeInformation:
+        case ProcessEnergyTrackingState:
+        case ProcessTelemetryCoverage:
+        case ProcessEnableReadWriteVmLogging:
+        case ProcessUptimeInformation:
+        case ProcessImageSection:
+        case ProcessSecurityDomainInformation:
+        case ProcessEnableLogging:
+        case ProcessLeapSecondInformation:
+        case ProcessAltPrefetchParam:
+        case ProcessMembershipInformation:
+        case ProcessEffectiveIoPriority:
+        case ProcessNetworkIoCounters: {
+            if (process_information_length > 0 && process_information != 0)
+            {
+                const std::vector<uint8_t> zeros(process_information_length, 0);
+                c.emu.write_memory(process_information, zeros.data(), process_information_length);
+            }
+            if (return_length)
+            {
+                return_length.write(process_information_length);
+            }
+            return STATUS_SUCCESS;
+        }
+
         default:
             c.win_emu.log.error("Unsupported process info class: %X (%s)\n",
                                 info_class,
@@ -224,26 +365,133 @@ namespace syscalls
             return STATUS_NOT_SUPPORTED;
         }
 
-        if (info_class == ProcessSchedulerSharedData                     //
-            || info_class == ProcessConsoleHostProcess                   //
-            || info_class == ProcessFaultInformation                     //
-            || info_class == ProcessDefaultHardErrorMode                 //
-            || info_class == ProcessRaiseUMExceptionOnInvalidHandleClose //
-            || info_class == ProcessDynamicFunctionTableInformation      //
-            || info_class == ProcessPriorityBoost                        //
-            || info_class == ProcessPriorityClassEx                      //
-            || info_class == ProcessPriorityClass || info_class == ProcessAffinityMask)
+        switch (info_class)
         {
-            return STATUS_SUCCESS;
-        }
-
-        if (info_class == ProcessExecuteFlags)
-        {
+        case ProcessExecuteFlags:
             return STATUS_NOT_SUPPORTED;
-        }
 
-        if (info_class == ProcessTlsInformation)
-        {
+        // Query-only info classes — setting them is invalid.
+        case ProcessBasicInformation:
+        case ProcessIoCounters:
+        case ProcessVmCounters:
+        case ProcessTimes:
+        case ProcessDebugPort:
+        case ProcessPooledUsageAndLimits:
+        case ProcessHandleCount:
+        case ProcessSessionInformation:
+        case ProcessWow64Information:
+        case ProcessImageFileName:
+        case ProcessLUIDDeviceMapsEnabled:
+        case ProcessDebugObjectHandle:
+        case ProcessCookie:
+        case ProcessImageInformation:
+        case ProcessCycleTime:
+        case ProcessImageFileNameWin32:
+        case ProcessImageFileMapping:
+        case ProcessGroupInformation:
+        case ProcessWindowInformation:
+        case ProcessHandleInformation:
+        case ProcessKeepAliveCount:
+        case ProcessHandleTable:
+        case ProcessCommandLineInformation:
+        case ProcessProtectionInformation:
+        case ProcessTelemetryIdInformation:
+        case ProcessJobMemoryInformation:
+        case ProcessChildProcessInformation:
+        case ProcessSubsystemInformation:
+        case ProcessEnergyValues:
+        case ProcessWin32kSyscallFilterInformation:
+        case ProcessWakeInformation:
+        case ProcessUptimeInformation:
+        case ProcessImageSection:
+        case ProcessSequenceNumber:
+        case ProcessSecurityDomainInformation:
+        case ProcessMembershipInformation:
+        case ProcessEffectiveIoPriority:
+        case ProcessEffectivePagePriority:
+        case ProcessNetworkIoCounters:
+        case ProcessFindFirstThreadByTebValue:
+            return STATUS_INVALID_INFO_CLASS;
+
+        // Obsolete or undocumented classes — nothing to do.
+        case ProcessSubsystemProcess:
+        case ProcessIumChallengeResponse:
+        case ProcessReserved3Information:
+        case ProcessCaptureTrustletLiveDump:
+        case ProcessDebugAuthInformation:
+        case ProcessLoaderDetour:
+        case ProcessCreateStateChange:
+        case ProcessApplyStateChange:
+        case ProcessAssignCpuPartitions:
+        case ProcessSlistRollbackInformation:
+            return STATUS_NOT_SUPPORTED;
+
+        // Settable classes — accept silently.
+        case ProcessQuotaLimits:
+        case ProcessBasePriority:
+        case ProcessRaisePriority:
+        case ProcessExceptionPort:
+        case ProcessAccessToken:
+        case ProcessLdtInformation:
+        case ProcessLdtSize:
+        case ProcessDefaultHardErrorMode:
+        case ProcessIoPortHandlers:
+        case ProcessWorkingSetWatch:
+        case ProcessUserModeIOPL:
+        case ProcessEnableAlignmentFaultFixup:
+        case ProcessPriorityClass:
+        case ProcessWx86Information:
+        case ProcessAffinityMask:
+        case ProcessPriorityBoost:
+        case ProcessDeviceMap:
+        case ProcessForegroundInformation:
+        case ProcessBreakOnTermination:
+        case ProcessDebugFlags:
+        case ProcessHandleTracing:
+        case ProcessIoPriority:
+        case ProcessPagePriority:
+        case ProcessThreadStackAllocation:
+        case ProcessWorkingSetWatchEx:
+        case ProcessAffinityUpdateMode:
+        case ProcessMemoryAllocationMode:
+        case ProcessTokenVirtualizationEnabled:
+        case ProcessConsoleHostProcess:
+        case ProcessMitigationPolicy:
+        case ProcessDynamicFunctionTableInformation:
+        case ProcessHandleCheckingMode:
+        case ProcessRevokeFileHandles:
+        case ProcessWorkingSetControl:
+        case ProcessCheckStackExtentsMode:
+        case ProcessMemoryExhaustion:
+        case ProcessFaultInformation:
+        case ProcessCommitReleaseInformation:
+        case ProcessDefaultCpuSetsInformation:
+        case ProcessAllowedCpuSetsInformation:
+        case ProcessRaiseUMExceptionOnInvalidHandleClose:
+        case ProcessInPrivate:
+        case ProcessHighGraphicsPriorityInformation:
+        case ProcessPowerThrottlingState:
+        case ProcessDisableSystemAllowedCpuSets:
+        case ProcessEnergyTrackingState:
+        case ProcessManageWritesToExecutableMemory:
+        case ProcessTelemetryCoverage:
+        case ProcessEnableReadWriteVmLogging:
+        case ProcessSystemResourceManagement:
+        case ProcessCombineSecurityDomainsInformation:
+        case ProcessEnableLogging:
+        case ProcessLeapSecondInformation:
+        case ProcessFiberShadowStackAllocation:
+        case ProcessFreeFiberShadowStackAllocation:
+        case ProcessAltSystemCallInformation:
+        case ProcessDynamicEHContinuationTargets:
+        case ProcessDynamicEnforcedCetCompatibleRanges:
+        case ProcessEnableOptionalXStateFeatures:
+        case ProcessAltPrefetchParam:
+        case ProcessPriorityClassEx:
+        case ProcessSchedulerSharedData:
+            return STATUS_SUCCESS;
+
+        case ProcessTlsInformation: {
             constexpr auto thread_data_offset = offsetof(PROCESS_TLS_INFORMATION, ThreadData);
             const auto total_thread_data_size = process_information_length - thread_data_offset;
 
@@ -378,8 +626,7 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        if (info_class == ProcessInstrumentationCallback)
-        {
+        case ProcessInstrumentationCallback: {
             if (process_information_length != sizeof(PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION))
             {
                 return STATUS_BUFFER_OVERFLOW;
@@ -395,12 +642,14 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported info process class: %X (%s)\n",
-                            info_class,
-                            magic_enum::enum_name(static_cast<PROCESSINFOCLASS>(info_class)).data());
-        c.emu.stop();
+        default:
+            c.win_emu.log.error("Unsupported info process class: %X (%s)\n",
+                                info_class,
+                                magic_enum::enum_name(static_cast<PROCESSINFOCLASS>(info_class)).data());
+            c.emu.stop();
 
-        return STATUS_NOT_SUPPORTED;
+            return STATUS_NOT_SUPPORTED;
+        }
     }
 
     NTSTATUS handle_NtOpenProcess()
