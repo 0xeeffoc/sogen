@@ -504,6 +504,45 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
+        if (info_class == ThreadAffinityMask)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(uint64_t));
+            }
+
+            if (thread_information_length < sizeof(uint64_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            auto mask = thread->affinity_mask;
+            if (mask == 0)
+            {
+                const auto active_processor_count = c.proc.kusd.get().ActiveProcessorCount;
+                mask = (active_processor_count >= 64) ? ~uint64_t{0} : ((uint64_t{1} << active_processor_count) - 1);
+            }
+
+            c.emu.write_memory<uint64_t>(thread_information, mask);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIdealProcessor)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(uint32_t));
+            }
+
+            if (thread_information_length < sizeof(uint32_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            c.emu.write_memory<uint32_t>(thread_information, thread->ideal_processor);
+            return STATUS_SUCCESS;
+        }
+
         c.win_emu.log.error("Unsupported thread query info class: %X (%s)\n",
                             info_class,
                             magic_enum::enum_name(static_cast<THREADINFOCLASS>(info_class)).data());
