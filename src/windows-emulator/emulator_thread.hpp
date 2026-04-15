@@ -276,6 +276,21 @@ class emulator_thread : public ref_counted_object
     uint32_t priority_boost{0};
     uint32_t ideal_processor{0};
     uint64_t affinity_mask{0};
+    uint16_t group_affinity_group{0};
+    uint64_t group_affinity_mask{0};
+    uint32_t io_priority{2};   // IoPriorityNormal
+    uint32_t page_priority{5}; // MEMORY_PRIORITY_NORMAL
+    uint32_t break_on_termination{0};
+    uint32_t power_throttling_control_mask{0};
+    uint32_t power_throttling_state_mask{0};
+    uint32_t dynamic_code_policy{0};
+    uint32_t explicit_case_sensitivity{0};
+    uint32_t workload_class{0};
+    uint32_t counter_profiling{0};
+    uint32_t cpu_accounting{0};
+    uint32_t stronger_bad_handle_checks{0};
+    uint32_t dbgk_wer_report_active{0};
+    uint64_t impersonation_token_handle{0};
 
     std::vector<callback_frame> callback_stack;
     std::optional<uint64_t> callback_return_rax{};
@@ -384,6 +399,21 @@ class emulator_thread : public ref_counted_object
         buffer.write(this->priority_boost);
         buffer.write(this->ideal_processor);
         buffer.write(this->affinity_mask);
+        buffer.write(this->group_affinity_group);
+        buffer.write(this->group_affinity_mask);
+        buffer.write(this->io_priority);
+        buffer.write(this->page_priority);
+        buffer.write(this->break_on_termination);
+        buffer.write(this->power_throttling_control_mask);
+        buffer.write(this->power_throttling_state_mask);
+        buffer.write(this->dynamic_code_policy);
+        buffer.write(this->explicit_case_sensitivity);
+        buffer.write(this->workload_class);
+        buffer.write(this->counter_profiling);
+        buffer.write(this->cpu_accounting);
+        buffer.write(this->stronger_bad_handle_checks);
+        buffer.write(this->dbgk_wer_report_active);
+        buffer.write(this->impersonation_token_handle);
 
         buffer.write_vector(this->callback_stack);
         buffer.write_optional(this->callback_return_rax);
@@ -452,6 +482,21 @@ class emulator_thread : public ref_counted_object
         buffer.read(this->priority_boost);
         buffer.read(this->ideal_processor);
         buffer.read(this->affinity_mask);
+        buffer.read(this->group_affinity_group);
+        buffer.read(this->group_affinity_mask);
+        buffer.read(this->io_priority);
+        buffer.read(this->page_priority);
+        buffer.read(this->break_on_termination);
+        buffer.read(this->power_throttling_control_mask);
+        buffer.read(this->power_throttling_state_mask);
+        buffer.read(this->dynamic_code_policy);
+        buffer.read(this->explicit_case_sensitivity);
+        buffer.read(this->workload_class);
+        buffer.read(this->counter_profiling);
+        buffer.read(this->cpu_accounting);
+        buffer.read(this->stronger_bad_handle_checks);
+        buffer.read(this->dbgk_wer_report_active);
+        buffer.read(this->impersonation_token_handle);
 
         buffer.read_vector(this->callback_stack);
         buffer.read_optional(this->callback_return_rax);

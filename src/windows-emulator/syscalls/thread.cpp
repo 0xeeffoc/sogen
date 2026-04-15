@@ -219,9 +219,198 @@ namespace syscalls
             }
 
             const emulator_object<handle> info{c.emu, thread_information};
+            thread->impersonation_token_handle = info.read().bits;
             info.write(DUMMY_IMPERSONATION_TOKEN);
 
             return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadActualBasePriority)
+        {
+            if (thread_information_length != sizeof(int32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->base_priority = c.emu.read_memory<int32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadBreakOnTermination)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->break_on_termination = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIoPriority)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->io_priority = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPagePriority)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->page_priority = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadGroupInformation)
+        {
+            constexpr auto required = sizeof(uint64_t) + sizeof(uint16_t) * 4;
+            if (thread_information_length < required)
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->group_affinity_mask = c.emu.read_memory<uint64_t>(thread_information);
+            thread->group_affinity_group = c.emu.read_memory<uint16_t>(thread_information + sizeof(uint64_t));
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIdealProcessorEx)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->ideal_processor = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadCounterProfiling)
+        {
+            if (thread_information_length < sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->counter_profiling = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadCpuAccountingInformation)
+        {
+            if (thread_information_length != sizeof(uint64_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->cpu_accounting = c.emu.read_memory<uint64_t>(thread_information) != 0 ? 1 : 0;
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadDynamicCodePolicyInfo)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->dynamic_code_policy = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadExplicitCaseSensitivity)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->explicit_case_sensitivity = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadDbgkWerReportActive)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->dbgk_wer_report_active = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPowerThrottlingState)
+        {
+            constexpr auto required = sizeof(uint32_t) * 3;
+            if (thread_information_length < required)
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->power_throttling_control_mask = c.emu.read_memory<uint32_t>(thread_information + sizeof(uint32_t));
+            thread->power_throttling_state_mask = c.emu.read_memory<uint32_t>(thread_information + sizeof(uint32_t) * 2);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadStrongerBadHandleChecks)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->stronger_bad_handle_checks = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadWorkloadClass)
+        {
+            if (thread_information_length != sizeof(uint32_t))
+            {
+                return STATUS_INFO_LENGTH_MISMATCH;
+            }
+            thread->workload_class = c.emu.read_memory<uint32_t>(thread_information);
+            return STATUS_SUCCESS;
+        }
+
+        // Set-only or no-op classes: accept silently (obsolete or informational only in emulation).
+        if (info_class == ThreadSwitchLegacyState            //
+            || info_class == ThreadSetTlsArrayAddress        //
+            || info_class == ThreadEventPair                 //
+            || info_class == ThreadAttachContainer           //
+            || info_class == ThreadManageWritesToExecutableMemory
+            || info_class == ThreadCreateStateChange         //
+            || info_class == ThreadApplyStateChange          //
+            || info_class == ThreadUpdateLockOwnership)
+        {
+            return STATUS_SUCCESS;
+        }
+
+        // Classes that are query-only — reject set attempts cleanly.
+        if (info_class == ThreadBasicInformation             //
+            || info_class == ThreadTimes                     //
+            || info_class == ThreadDescriptorTableEntry      //
+            || info_class == ThreadQuerySetWin32StartAddress //
+            || info_class == ThreadPerformanceCount          //
+            || info_class == ThreadAmILastThread             //
+            || info_class == ThreadIsIoPending               //
+            || info_class == ThreadIsTerminated              //
+            || info_class == ThreadLastSystemCall            //
+            || info_class == ThreadCycleTime                 //
+            || info_class == ThreadTebInformation            //
+            || info_class == ThreadCSwitchMon                //
+            || info_class == ThreadCSwitchPmu                //
+            || info_class == ThreadUmsInformation            //
+            || info_class == ThreadSuspendCount              //
+            || info_class == ThreadHeterogeneousCpuPolicy    //
+            || info_class == ThreadContainerId               //
+            || info_class == ThreadSelectedCpuSets           //
+            || info_class == ThreadSystemThreadInformation   //
+            || info_class == ThreadActualGroupAffinity       //
+            || info_class == ThreadWorkOnBehalfTicket        //
+            || info_class == ThreadSubsystemInformation      //
+            || info_class == ThreadEffectiveIoPriority       //
+            || info_class == ThreadEffectivePagePriority     //
+            || info_class == ThreadTebInformationAtomic      //
+            || info_class == ThreadIndexInformation)
+        {
+            return STATUS_INVALID_INFO_CLASS;
         }
 
         if (info_class == ThreadZeroTlsCell)
@@ -541,6 +730,341 @@ namespace syscalls
 
             c.emu.write_memory<uint32_t>(thread_information, thread->ideal_processor);
             return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIdealProcessorEx)
+        {
+            constexpr auto required = sizeof(uint16_t) * 2 + sizeof(uint32_t);
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            c.emu.write_memory<uint16_t>(thread_information, 0);
+            c.emu.write_memory<uint8_t>(thread_information + sizeof(uint16_t), static_cast<uint8_t>(thread->ideal_processor));
+            c.emu.write_memory<uint8_t>(thread_information + sizeof(uint16_t) + 1, 0);
+            c.emu.write_memory<uint32_t>(thread_information + sizeof(uint16_t) * 2, 0);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIsIoPending             //
+            || info_class == ThreadIsTerminated         //
+            || info_class == ThreadBreakOnTermination   //
+            || info_class == ThreadDynamicCodePolicyInfo //
+            || info_class == ThreadExplicitCaseSensitivity
+            || info_class == ThreadCounterProfiling     //
+            || info_class == ThreadCpuAccountingInformation
+            || info_class == ThreadSuspendCount         //
+            || info_class == ThreadHeterogeneousCpuPolicy
+            || info_class == ThreadSubsystemInformation //
+            || info_class == ThreadEffectivePagePriority
+            || info_class == ThreadWorkloadClass)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(uint32_t));
+            }
+            if (thread_information_length < sizeof(uint32_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            uint32_t value = 0;
+            switch (static_cast<uint32_t>(info_class))
+            {
+            case ThreadIsTerminated:
+                value = thread->is_terminated() ? 1u : 0u;
+                break;
+            case ThreadSuspendCount:
+                value = thread->suspended;
+                break;
+            case ThreadBreakOnTermination:
+                value = thread->break_on_termination;
+                break;
+            case ThreadDynamicCodePolicyInfo:
+                value = thread->dynamic_code_policy;
+                break;
+            case ThreadExplicitCaseSensitivity:
+                value = thread->explicit_case_sensitivity;
+                break;
+            case ThreadCounterProfiling:
+                value = thread->counter_profiling;
+                break;
+            case ThreadCpuAccountingInformation:
+                value = thread->cpu_accounting;
+                break;
+            case ThreadEffectivePagePriority:
+                value = thread->page_priority;
+                break;
+            case ThreadWorkloadClass:
+                value = thread->workload_class;
+                break;
+            default:
+                value = 0;
+                break;
+            }
+            c.emu.write_memory<uint32_t>(thread_information, value);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIoPriority || info_class == ThreadEffectiveIoPriority)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(uint32_t));
+            }
+            if (thread_information_length < sizeof(uint32_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            c.emu.write_memory<uint32_t>(thread_information, thread->io_priority);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPagePriority)
+        {
+            constexpr auto required = sizeof(uint32_t);
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            c.emu.write_memory<uint32_t>(thread_information, thread->page_priority);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadPowerThrottlingState)
+        {
+            constexpr auto required = sizeof(uint32_t) * 3;
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            c.emu.write_memory<uint32_t>(thread_information, 0);
+            c.emu.write_memory<uint32_t>(thread_information + sizeof(uint32_t), thread->power_throttling_control_mask);
+            c.emu.write_memory<uint32_t>(thread_information + sizeof(uint32_t) * 2, thread->power_throttling_state_mask);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadGroupInformation || info_class == ThreadActualGroupAffinity)
+        {
+            constexpr auto required = sizeof(uint64_t) + sizeof(uint16_t) * 4;
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+
+            auto mask = thread->group_affinity_mask;
+            if (mask == 0)
+            {
+                const auto active = c.proc.kusd.get().ActiveProcessorCount;
+                mask = (active >= 64) ? ~uint64_t{0} : ((uint64_t{1} << active) - 1);
+            }
+
+            c.emu.write_memory<uint64_t>(thread_information, mask);
+            c.emu.write_memory<uint16_t>(thread_information + sizeof(uint64_t), thread->group_affinity_group);
+            c.emu.write_memory<uint16_t>(thread_information + sizeof(uint64_t) + sizeof(uint16_t), 0);
+            c.emu.write_memory<uint16_t>(thread_information + sizeof(uint64_t) + sizeof(uint16_t) * 2, 0);
+            c.emu.write_memory<uint16_t>(thread_information + sizeof(uint64_t) + sizeof(uint16_t) * 3, 0);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadCycleTime)
+        {
+            constexpr auto required = sizeof(uint64_t) + sizeof(uint32_t);
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            c.emu.write_memory<uint64_t>(thread_information, thread->executed_instructions);
+            c.emu.write_memory<uint32_t>(thread_information + sizeof(uint64_t), 0);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadLastSystemCall)
+        {
+            constexpr auto required = sizeof(uint64_t) * 2 + sizeof(uint32_t) * 2;
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            std::array<std::byte, required> zero{};
+            c.emu.write_memory(thread_information, zero.data(), zero.size());
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadDescriptorTableEntry)
+        {
+            constexpr auto required = sizeof(uint32_t) + 8;
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            std::array<std::byte, required> zero{};
+            c.emu.write_memory(thread_information, zero.data(), zero.size());
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadContainerId)
+        {
+            constexpr auto required = 16; // GUID
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            std::array<std::byte, required> zero{};
+            c.emu.write_memory(thread_information, zero.data(), zero.size());
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadNameInformation)
+        {
+            const auto name_bytes = thread->name.size() * sizeof(char16_t);
+            const auto required = sizeof(UNICODE_STRING<EmulatorTraits<Emu64>>) + name_bytes + sizeof(char16_t);
+
+            if (return_length)
+            {
+                return_length.write(static_cast<uint32_t>(required));
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_OVERFLOW;
+            }
+
+            const auto buffer_start = thread_information + sizeof(UNICODE_STRING<EmulatorTraits<Emu64>>);
+            c.emu.write_memory(buffer_start, thread->name.c_str(), name_bytes + sizeof(char16_t));
+
+            const emulator_object<UNICODE_STRING<EmulatorTraits<Emu64>>> info{c.emu, thread_information};
+            info.access([&](UNICODE_STRING<EmulatorTraits<Emu64>>& str) {
+                str.Length = static_cast<uint16_t>(name_bytes);
+                str.MaximumLength = static_cast<uint16_t>(name_bytes + sizeof(char16_t));
+                str.Buffer = buffer_start;
+            });
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadTebInformationAtomic)
+        {
+            // Same semantics as ThreadTebInformation.
+            if (return_length)
+            {
+                return_length.write(sizeof(THREAD_TEB_INFORMATION));
+            }
+            if (thread_information_length < sizeof(THREAD_TEB_INFORMATION))
+            {
+                return STATUS_BUFFER_OVERFLOW;
+            }
+
+            const auto teb_info = c.emu.read_memory<THREAD_TEB_INFORMATION>(thread_information);
+            const auto data = c.emu.read_memory(thread->teb64->value() + teb_info.TebOffset, teb_info.BytesToRead);
+            c.emu.write_memory(teb_info.TebInformation, data.data(), data.size());
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadIndexInformation)
+        {
+            if (return_length)
+            {
+                return_length.write(sizeof(uint32_t));
+            }
+            if (thread_information_length < sizeof(uint32_t))
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            c.emu.write_memory<uint32_t>(thread_information, thread->id);
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadSchedulerSharedDataSlot)
+        {
+            constexpr auto required = sizeof(uint64_t) * 2;
+            if (return_length)
+            {
+                return_length.write(required);
+            }
+            if (thread_information_length < required)
+            {
+                return STATUS_BUFFER_TOO_SMALL;
+            }
+            std::array<std::byte, required> zero{};
+            c.emu.write_memory(thread_information, zero.data(), zero.size());
+            return STATUS_SUCCESS;
+        }
+
+        if (info_class == ThreadSystemThreadInformation //
+            || info_class == ThreadSelectedCpuSets      //
+            || info_class == ThreadWorkOnBehalfTicket)
+        {
+            // Return a zero-initialised buffer of the caller-supplied length.
+            if (return_length)
+            {
+                return_length.write(thread_information_length);
+            }
+            if (thread_information_length == 0)
+            {
+                return STATUS_SUCCESS;
+            }
+            std::vector<std::byte> zero(thread_information_length, std::byte{0});
+            c.emu.write_memory(thread_information, zero.data(), zero.size());
+            return STATUS_SUCCESS;
+        }
+
+        // Query-unsupported or obsolete classes.
+        if (info_class == ThreadEventPair      //
+            || info_class == ThreadCSwitchMon  //
+            || info_class == ThreadCSwitchPmu  //
+            || info_class == ThreadUmsInformation)
+        {
+            return STATUS_NOT_SUPPORTED;
+        }
+
+        // Classes that can only be set — reject query cleanly.
+        if (info_class == ThreadEnableAlignmentFaultFixup   //
+            || info_class == ThreadZeroTlsCell              //
+            || info_class == ThreadImpersonationToken       //
+            || info_class == ThreadSwitchLegacyState        //
+            || info_class == ThreadSetTlsArrayAddress       //
+            || info_class == ThreadActualBasePriority       //
+            || info_class == ThreadDbgkWerReportActive      //
+            || info_class == ThreadAttachContainer          //
+            || info_class == ThreadManageWritesToExecutableMemory
+            || info_class == ThreadCreateStateChange        //
+            || info_class == ThreadApplyStateChange         //
+            || info_class == ThreadStrongerBadHandleChecks  //
+            || info_class == ThreadUpdateLockOwnership)
+        {
+            return STATUS_INVALID_INFO_CLASS;
         }
 
         c.win_emu.log.error("Unsupported thread query info class: %X (%s)\n",
