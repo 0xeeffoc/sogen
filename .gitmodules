@@ -35,3 +35,7 @@
 	path = deps/zstd
 	url = https://github.com/facebook/zstd.git
 	shallow = true
+[submodule "deps/magic_enum"]
+	path = deps/magic_enum
+	url = https://github.com/Neargye/magic_enum.git
+	shallow = true

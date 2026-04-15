@@ -41,5 +41,9 @@ add_subdirectory(capstone)
 
 ##########################################
 
+add_subdirectory(magic_enum)
+
+##########################################
+
 include(googletest.cmake)
 include(zstd.cmake)

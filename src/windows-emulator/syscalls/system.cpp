@@ -2,6 +2,8 @@
 #include "../emulator_utils.hpp"
 #include "../syscall_utils.hpp"
 
+#include <magic_enum/magic_enum.hpp>
+
 namespace syscalls
 {
     namespace
@@ -300,7 +302,7 @@ namespace syscalls
         }
 
         default:
-            c.win_emu.log.error("Unsupported system info class: %X\n", info_class);
+            c.win_emu.log.error("Unsupported system info class: %X (%s)\n", info_class, magic_enum::enum_name(info_class).data());
             c.emu.stop();
             return STATUS_NOT_SUPPORTED;
         }
