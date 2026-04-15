@@ -5,6 +5,8 @@
 #include "../syscall_utils.hpp"
 #include "../memory_manager.hpp"
 
+#include <magic_enum/magic_enum.hpp>
+
 namespace syscalls
 {
     NTSTATUS handle_NtQueryVirtualMemory(const syscall_context& c, const handle process_handle, const uint64_t base_address,
@@ -139,7 +141,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported memory info class: %X\n", info_class);
+        c.win_emu.log.error("Unsupported memory info class: %X (%s)\n", info_class,
+                            magic_enum::enum_name(static_cast<MEMORY_INFORMATION_CLASS>(info_class)).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
     }

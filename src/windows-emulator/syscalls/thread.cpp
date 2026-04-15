@@ -3,6 +3,7 @@
 #include "../emulator_utils.hpp"
 #include "../syscall_utils.hpp"
 
+#include <magic_enum/magic_enum.hpp>
 #include <utils/finally.hpp>
 
 namespace
@@ -226,7 +227,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported thread set info class: %X\n", info_class);
+        c.win_emu.log.error("Unsupported thread set info class: %X (%s)\n", info_class,
+                            magic_enum::enum_name(info_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
     }
@@ -417,7 +419,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported thread query info class: %X\n", info_class);
+        c.win_emu.log.error("Unsupported thread query info class: %X (%s)\n", info_class,
+                            magic_enum::enum_name(static_cast<THREADINFOCLASS>(info_class)).data());
         c.emu.stop();
 
         return STATUS_NOT_SUPPORTED;

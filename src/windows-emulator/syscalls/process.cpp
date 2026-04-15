@@ -2,6 +2,7 @@
 #include "../emulator_utils.hpp"
 #include "../syscall_utils.hpp"
 
+#include <magic_enum/magic_enum.hpp>
 #include <utils/finally.hpp>
 
 namespace syscalls
@@ -206,7 +207,8 @@ namespace syscalls
         }
 
         default:
-            c.win_emu.log.error("Unsupported process info class: %X\n", info_class);
+            c.win_emu.log.error("Unsupported process info class: %X (%s)\n", info_class,
+                                magic_enum::enum_name(static_cast<PROCESSINFOCLASS>(info_class)).data());
             c.emu.stop();
 
             return STATUS_NOT_SUPPORTED;
@@ -392,7 +394,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported info process class: %X\n", info_class);
+        c.win_emu.log.error("Unsupported info process class: %X (%s)\n", info_class,
+                            magic_enum::enum_name(static_cast<PROCESSINFOCLASS>(info_class)).data());
         c.emu.stop();
 
         return STATUS_NOT_SUPPORTED;

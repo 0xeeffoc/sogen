@@ -2,6 +2,8 @@
 #include "../emulator_utils.hpp"
 #include "../syscall_utils.hpp"
 
+#include <magic_enum/magic_enum.hpp>
+
 namespace syscalls
 {
     TOKEN_TYPE get_token_type(const handle token_handle)
@@ -352,7 +354,8 @@ namespace syscalls
             return STATUS_SUCCESS;
         }
 
-        c.win_emu.log.error("Unsupported token info class: %X\n", token_information_class);
+        c.win_emu.log.error("Unsupported token info class: %X (%s)\n", token_information_class,
+                            magic_enum::enum_name(token_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
     }

@@ -3,6 +3,8 @@
 #include "../io_completion_wait.hpp"
 #include "../syscall_utils.hpp"
 
+#include <magic_enum/magic_enum.hpp>
+
 namespace syscalls
 {
     NTSTATUS handle_NtClose(const syscall_context& c, const handle h)
@@ -362,7 +364,8 @@ namespace syscalls
                                                                 });
         }
 
-        c.win_emu.log.error("Unsupported object info class: %X\n", object_information_class);
+        c.win_emu.log.error("Unsupported object info class: %X (%s)\n", object_information_class,
+                            magic_enum::enum_name(object_information_class).data());
         c.emu.stop();
         return STATUS_NOT_SUPPORTED;
     }
